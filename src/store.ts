@@ -385,12 +385,12 @@ export class MemoryStore {
       updatedAt: row.updated_at as number,
       lastAccessedAt: row.last_accessed_at as number,
       decayDays: row.decay_days as number | null,
-      sourceChannel: row.source_channel ?? undefined,
-      sourceMessageId: row.source_message_id ?? undefined,
+      sourceChannel: (row.source_channel as string | null) ?? undefined,
+      sourceMessageId: (row.source_message_id as string | null) ?? undefined,
       tags: JSON.parse((row.tags as string) || '[]'),
-      supersedes: row.supersedes ?? undefined,
-      deletedAt: row.deleted_at ?? undefined,
-      deleteReason: row.delete_reason ?? undefined,
+      supersedes: (row.supersedes as string | null) ?? undefined,
+      deletedAt: (row.deleted_at as number | null) ?? undefined,
+      deleteReason: (row.delete_reason as string | null) ?? undefined,
     };
   }
 

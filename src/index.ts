@@ -150,7 +150,7 @@ const memoryToolsPlugin = {
 
     // Auto-inject standing instructions at conversation start
     if (cfg.autoInjectInstructions !== false) {
-      api.on('before_agent_start', async (event) => {
+      api.on('before_agent_start', async (event: { prompt?: string }) => {
         // Get standing instructions
         const instructions = store.getByCategory('instruction', 10);
 
@@ -176,7 +176,7 @@ const memoryToolsPlugin = {
     // ═══════════════════════════════════════════════════════════════════════
 
     api.registerCli(
-      ({ program }) => {
+      ({ program }: { program: any }) => {
         const memory = program
           .command('memory-tools')
           .description('Memory-as-Tools plugin commands');
@@ -202,10 +202,10 @@ const memoryToolsPlugin = {
           .description('List memories')
           .option('-c, --category <category>', 'Filter by category')
           .option('-l, --limit <n>', 'Max results', '20')
-          .action((opts) => {
+          .action((opts: { category?: string; limit?: string }) => {
             const results = store.list({
               category: opts.category as any,
-              limit: parseInt(opts.limit),
+              limit: parseInt(opts.limit ?? '20'),
             });
 
             console.log(`Showing ${results.items.length} of ${results.total} memories:\n`);
@@ -218,10 +218,10 @@ const memoryToolsPlugin = {
           .command('search <query>')
           .description('Search memories')
           .option('-l, --limit <n>', 'Max results', '10')
-          .action(async (query, opts) => {
+          .action(async (query: string, opts: { limit?: string }) => {
             const results = await store.search({
               query,
-              limit: parseInt(opts.limit),
+              limit: parseInt(opts.limit ?? '10'),
             });
 
             console.log(`Found ${results.length} memories:\n`);

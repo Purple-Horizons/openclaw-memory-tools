@@ -35,10 +35,11 @@ export function parseConfig(raw: unknown): MemoryToolsConfig {
     throw new Error('Missing embedding.apiKey');
   }
 
+  const model = (embedding.model as string) || 'text-embedding-3-small';
   return {
     embedding: {
       apiKey: embedding.apiKey,
-      model: (embedding.model as string) || 'text-embedding-3-small',
+      model: model as 'text-embedding-3-small' | 'text-embedding-3-large',
     },
     dbPath: (config.dbPath as string) || '~/.openclaw/memory/tools',
     autoInjectInstructions: config.autoInjectInstructions !== false,
