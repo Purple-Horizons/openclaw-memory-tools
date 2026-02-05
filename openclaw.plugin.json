@@ -1,0 +1,65 @@
+{
+  "id": "memory-tools",
+  "kind": "memory",
+  "name": "Memory Tools",
+  "description": "Agent-controlled memory with confidence scoring, decay, and semantic search. The agent decides WHEN to store/retrieve memories.",
+  "version": "1.0.0",
+  "uiHints": {
+    "embedding.apiKey": {
+      "label": "OpenAI API Key",
+      "sensitive": true,
+      "placeholder": "sk-proj-...",
+      "help": "API key for OpenAI embeddings (or use ${OPENAI_API_KEY})"
+    },
+    "embedding.model": {
+      "label": "Embedding Model",
+      "placeholder": "text-embedding-3-small",
+      "help": "OpenAI embedding model to use"
+    },
+    "dbPath": {
+      "label": "Database Path",
+      "placeholder": "~/.openclaw/memory/tools",
+      "advanced": true
+    },
+    "autoInjectInstructions": {
+      "label": "Auto-Inject Instructions",
+      "help": "Inject standing instructions (category='instruction') at conversation start"
+    },
+    "decayCheckInterval": {
+      "label": "Decay Check Interval (hours)",
+      "help": "How often to check for decayed memories (0 = disabled)"
+    }
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "embedding": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "apiKey": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string",
+            "enum": ["text-embedding-3-small", "text-embedding-3-large"]
+          }
+        },
+        "required": ["apiKey"]
+      },
+      "dbPath": {
+        "type": "string"
+      },
+      "autoInjectInstructions": {
+        "type": "boolean",
+        "default": true
+      },
+      "decayCheckInterval": {
+        "type": "number",
+        "default": 24
+      }
+    },
+    "required": ["embedding"]
+  }
+}
