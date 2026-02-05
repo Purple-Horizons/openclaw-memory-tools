@@ -257,12 +257,24 @@ pnpm build
 |---------|------|------------|--------------|
 | **Architecture** | 3-tier hierarchical (Resource → Item → Category) | Hook-based observer with lifecycle events | Tool-based agent control |
 | **Storage Trigger** | Automatic extraction during background processing | Lifecycle hooks (SessionStart, PostToolUse, etc.) | Agent explicitly decides when to store |
-| **Conflict Handling** | None - relies on proactive pattern detection | None - auto-capture model | **Explicit** - auto-supersede + memory_forget |
+| **Conflict Handling** | None - relies on proactive pattern detection | None - auto-capture model | Auto-supersede + explicit forget |
 | **Context Injection** | Proactive - predicts and pre-loads context | Progressive disclosure (3-layer filtering) | On-demand via memory_search |
 | **Token Efficiency** | Compression via fact extraction | ~10x savings via progressive disclosure | Semantic search with configurable limits |
-| **Best For** | 24/7 agents with predictable patterns | Automatic session continuity | Agents needing precise memory control |
+| **Auditability** | Background processing | Hook-based capture | Full SQLite inspection, explicit tool calls |
+| **User Corrections** | Accumulates conflicting facts | Accumulates conflicting facts | Replaces old with new automatically |
+| **Best For** | 24/7 agents with predictable patterns | Automatic session continuity | Personal assistants with ongoing relationships |
 
-**Our approach**: The agent decides **when** and **what** to remember, with automatic conflict resolution when storing corrections. This gives maximum control while handling the common "actually, it's X not Y" correction pattern gracefully.
+### Design Philosophy
+
+Different memory systems optimize for different things:
+
+- **Automatic systems** (memU, claude-mem) minimize agent cognitive load by extracting memories in the background. Trade-off: less control over what's captured, conflicts accumulate.
+
+- **Agent-controlled systems** (memory-tools) put the agent in charge of what matters. Trade-off: requires active management, but memories are deliberate choices.
+
+For agents that maintain ongoing relationships with users—where someone might say "no, my favorite color is purple, not blue"—explicit conflict handling prevents contradictory memories from accumulating. Every memory has a clear provenance: the agent decided it was worth remembering, and corrections replace rather than compete with old information.
+
+The hybrid SQLite + LanceDB storage means you can always `sqlite3 ~/.openclaw/memory/tools/memory.db` to inspect exactly what your agent knows and why.
 
 ## References
 
