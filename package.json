@@ -1,5 +1,5 @@
 {
-  "name": "@purple-horizons/openclaw-memory-tools",
+  "name": "memory-tools",
   "version": "1.0.0",
   "description": "Memory-as-Tools plugin for OpenClaw - Agent-controlled persistent memory with confidence scoring and decay",
   "type": "module",
