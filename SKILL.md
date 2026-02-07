@@ -31,15 +31,36 @@ Traditional memory systems auto-capture everything, flooding context with irrele
 
 ## Installation
 
+### Step 1: Install from ClawHub
+
 ```bash
 clawhub install memory-tools
 ```
 
-Then add to `openclaw.json`:
+### Step 2: Build the plugin
+
+```bash
+cd skills/memory-tools
+npm install
+npm run build
+```
+
+### Step 3: Activate the plugin
+
+```bash
+openclaw plugins install --link ./skills/memory-tools
+openclaw plugins enable memory-tools
+openclaw gateway restart
+```
+
+Or manually add to `openclaw.json`:
 
 ```json
 {
   "plugins": {
+    "load": {
+      "paths": ["./skills/memory-tools"]
+    },
     "entries": {
       "memory-tools": {
         "enabled": true,
@@ -52,7 +73,9 @@ Then add to `openclaw.json`:
 }
 ```
 
-Requires `OPENAI_API_KEY` environment variable for embeddings.
+### Requirements
+
+- `OPENAI_API_KEY` environment variable (for embeddings)
 
 ## Memory Categories
 
