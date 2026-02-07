@@ -48,29 +48,22 @@ npm run build
 ### Step 3: Activate the plugin
 
 ```bash
-openclaw plugins install --link ./skills/memory-tools
+openclaw plugins install --link .
 openclaw plugins enable memory-tools
+```
+
+### Step 4: Restart the gateway
+
+**Standard (systemd):**
+```bash
 openclaw gateway restart
 ```
 
-Or manually add to `openclaw.json`:
-
-```json
-{
-  "plugins": {
-    "load": {
-      "paths": ["./skills/memory-tools"]
-    },
-    "entries": {
-      "memory-tools": {
-        "enabled": true,
-        "config": {
-          "embedding": {}
-        }
-      }
-    }
-  }
-}
+**Docker (no systemd):**
+```bash
+# Hard restart required on first install
+pkill -f openclaw-gateway
+# Gateway auto-restarts via container supervisor
 ```
 
 ### Requirements
@@ -84,8 +77,11 @@ Or manually add to `openclaw.json`:
 | fact | Static information | "User's dog is named Rex" |
 | preference | Likes/dislikes | "User prefers dark mode" |
 | event | Temporal things | "Dentist Tuesday 3pm" |
+| relationship | People connections | "Sarah is user's wife" |
 | instruction | Standing orders | "Always respond in Spanish" |
 | decision | Choices made | "We decided to use PostgreSQL" |
+| context | Situational info | "User is job hunting" |
+| entity | Named things | "Project Apollo is their startup" |
 
 ## Tool Reference
 
@@ -95,7 +91,8 @@ memory_store({
   content: "User prefers bullet points",
   category: "preference",
   confidence: 0.9,
-  importance: 0.7
+  importance: 0.7,
+  tags: ["formatting", "communication"]
 })
 ```
 
@@ -108,11 +105,37 @@ memory_search({
 })
 ```
 
+### memory_update
+```
+memory_update({
+  id: "abc123",
+  content: "User now prefers numbered lists",
+  confidence: 1.0
+})
+```
+
 ### memory_forget
 ```
 memory_forget({
   query: "bullet points",
-  reason: "User corrected"
+  reason: "User corrected preference"
+})
+```
+
+### memory_summarize
+```
+memory_summarize({
+  topic: "user's work projects",
+  maxMemories: 20
+})
+```
+
+### memory_list
+```
+memory_list({
+  category: "instruction",
+  sortBy: "importance",
+  limit: 20
 })
 ```
 
@@ -120,8 +143,23 @@ memory_forget({
 
 Inspect what your agent knows:
 ```bash
-sqlite3 ~/.openclaw/memory/tools/memory.db "SELECT * FROM memories"
+sqlite3 ~/.openclaw/memory/tools/memory.db "SELECT id, category, content FROM memories"
 ```
+
+Export all memories:
+```bash
+openclaw memory-tools export > memories.json
+```
+
+## Troubleshooting
+
+**"Database connection not open" error:**
+- Hard restart the gateway: `pkill -f openclaw-gateway`
+- Check permissions: `chown -R $(whoami) ~/.openclaw/memory/tools`
+
+**Plugin not loading:**
+- Verify build: `ls skills/memory-tools/dist/index.js`
+- Check doctor: `openclaw doctor --non-interactive`
 
 ## License
 
