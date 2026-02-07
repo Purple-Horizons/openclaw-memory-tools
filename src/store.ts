@@ -42,9 +42,8 @@ export class MemoryStore {
     this.vectorDim = vectorDim;
 
     // Ensure directory exists
-    const dir = path.dirname(dbPath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
+    if (!fs.existsSync(dbPath)) {
+      fs.mkdirSync(dbPath, { recursive: true });
     }
 
     // Initialize SQLite

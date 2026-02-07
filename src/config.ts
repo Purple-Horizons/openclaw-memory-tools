@@ -33,13 +33,10 @@ function expandEnvVars(value: string): string {
 }
 
 export function parseConfig(raw: unknown): MemoryToolsConfig {
-  const config = raw as Record<string, unknown>;
+  const config = (raw ?? {}) as Record<string, unknown>;
 
-  if (!config.embedding || typeof config.embedding !== 'object') {
-    throw new Error('Missing embedding configuration');
-  }
-
-  const embedding = config.embedding as Record<string, unknown>;
+  // Handle missing or empty embedding config
+  const embedding = (config.embedding ?? {}) as Record<string, unknown>;
   let apiKey = embedding.apiKey as string | undefined;
 
   // Support environment variable expansion
