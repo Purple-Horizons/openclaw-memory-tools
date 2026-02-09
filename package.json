@@ -1,6 +1,6 @@
 {
   "name": "memory-tools",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Memory-as-Tools plugin for OpenClaw - Agent-controlled persistent memory with confidence scoring and decay",
   "type": "module",
   "main": "dist/index.js",
