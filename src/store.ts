@@ -593,10 +593,22 @@ export class MemoryStore {
   }
 
   close(): void {
+    // Close SQLite connection
     if (this.db) {
       this.save();
       this.db.close();
       this.db = null;
     }
+
+    // Close LanceDB connection
+    if (this.vectorDb) {
+      this.vectorDb.close();
+      this.vectorDb = null;
+    }
+    this.vectorTable = null;
+
+    // Reset initialization promises so databases can be reopened
+    this.initPromise = null;
+    this.sqliteInitPromise = null;
   }
 }

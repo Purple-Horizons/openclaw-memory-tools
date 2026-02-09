@@ -372,4 +372,51 @@ describe('MemoryStore', () => {
       expect(updated.lastAccessedAt).toBeGreaterThan(originalAccess);
     });
   });
+
+  describe('close and reopen', () => {
+    it('should allow database to be reopened after close (SIGUSR1 restart scenario)', async () => {
+      // Create a memory before close
+      const memory = await store.create({
+        content: 'Persistent memory',
+        category: 'fact',
+        importance: 0.8,
+      });
+
+      // Close the database (simulates service stop)
+      store.close();
+
+      // Reopen by calling an async method (simulates service restart)
+      // This should re-initialize both SQLite and LanceDB
+      await store.init();
+
+      // Verify we can still read the persisted memory
+      const retrieved = store.get(memory.id);
+      expect(retrieved).toBeDefined();
+      expect(retrieved!.content).toBe('Persistent memory');
+
+      // Verify we can create new memories
+      const newMemory = await store.create({
+        content: 'New memory after restart',
+        category: 'fact',
+      });
+      expect(newMemory.id).toBeDefined();
+
+      // Verify search still works (uses LanceDB)
+      const results = await store.search('Persistent', { limit: 5 });
+      expect(results.length).toBeGreaterThan(0);
+    });
+
+    it('should handle multiple close/reopen cycles', async () => {
+      for (let i = 0; i < 3; i++) {
+        await store.create({ content: `Cycle ${i}`, category: 'fact' });
+        store.close();
+        await store.init();
+      }
+
+      // Should have all 3 memories
+      const all = store.list();
+      expect(all.total).toBe(3);
+      expect(all.items.length).toBe(3);
+    });
+  });
 });
