@@ -1,23 +1,24 @@
 /**
- * Configuration Schema for Memory-as-Tools Plugin
+ * Configuration Schema for Memory-as-Tools v2
+ *
+ * v2 uses QMD for search - no OpenAI API key required!
  */
 
 import { Type, type Static } from '@sinclair/typebox';
-import { MEMORY_CATEGORIES, VECTOR_DIMS } from './types.js';
-
-export const embeddingConfigSchema = Type.Object({
-  apiKey: Type.String(),
-  model: Type.Optional(Type.Union([
-    Type.Literal('text-embedding-3-small'),
-    Type.Literal('text-embedding-3-large'),
-  ])),
-});
+import { MEMORY_CATEGORIES } from './types.js';
 
 export const memoryToolsConfigSchema = Type.Object({
-  embedding: embeddingConfigSchema,
-  dbPath: Type.Optional(Type.String()),
+  // Path to store memories (markdown files)
+  memoriesPath: Type.Optional(Type.String()),
+
+  // Legacy v1 database path (for migration detection)
+  legacyDbPath: Type.Optional(Type.String()),
+
+  // Auto-inject standing instructions at conversation start
   autoInjectInstructions: Type.Optional(Type.Boolean()),
-  decayCheckInterval: Type.Optional(Type.Number()),
+
+  // QMD collection name
+  qmdCollection: Type.Optional(Type.String()),
 });
 
 export type MemoryToolsConfig = Static<typeof memoryToolsConfigSchema>;
@@ -32,39 +33,33 @@ function expandEnvVars(value: string): string {
   });
 }
 
+/**
+ * Expand ~ to home directory
+ */
+function expandPath(p: string): string {
+  if (p.startsWith('~/')) {
+    return p.replace('~', process.env.HOME || process.env.USERPROFILE || '');
+  }
+  return p;
+}
+
 export function parseConfig(raw: unknown): MemoryToolsConfig {
   const config = (raw ?? {}) as Record<string, unknown>;
 
-  // Handle missing or empty embedding config
-  const embedding = (config.embedding ?? {}) as Record<string, unknown>;
-  let apiKey = embedding.apiKey as string | undefined;
+  // Default paths
+  let memoriesPath = (config.memoriesPath as string) || '~/.openclaw/memories';
+  let legacyDbPath = (config.legacyDbPath as string) || (config.dbPath as string) || '~/.openclaw/memory/tools';
 
-  // Support environment variable expansion
-  if (apiKey) {
-    apiKey = expandEnvVars(apiKey);
-  }
+  // Expand environment variables and paths
+  memoriesPath = expandPath(expandEnvVars(memoriesPath));
+  legacyDbPath = expandPath(expandEnvVars(legacyDbPath));
 
-  // Fall back to OPENAI_API_KEY env var if not configured
-  if (!apiKey) {
-    apiKey = process.env.OPENAI_API_KEY;
-  }
-
-  if (!apiKey) {
-    throw new Error(
-      'Missing OpenAI API key. Set embedding.apiKey in config, use ${OPENAI_API_KEY}, or set OPENAI_API_KEY environment variable.'
-    );
-  }
-
-  const model = (embedding.model as string) || 'text-embedding-3-small';
   return {
-    embedding: {
-      apiKey,
-      model: model as 'text-embedding-3-small' | 'text-embedding-3-large',
-    },
-    dbPath: (config.dbPath as string) || '~/.openclaw/memory/tools',
+    memoriesPath,
+    legacyDbPath,
     autoInjectInstructions: config.autoInjectInstructions !== false,
-    decayCheckInterval: (config.decayCheckInterval as number) ?? 24,
+    qmdCollection: (config.qmdCollection as string) || 'memories',
   };
 }
 
-export { MEMORY_CATEGORIES, VECTOR_DIMS };
+export { MEMORY_CATEGORIES };
