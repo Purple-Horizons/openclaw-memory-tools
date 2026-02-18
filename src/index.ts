@@ -14,7 +14,6 @@
 
 import type { OpenClawPluginApi } from './plugin-types.js';
 import { parseConfig } from './config.js';
-import { MEMORY_CATEGORIES } from './types.js';
 import { MemoryStoreV2 } from './store.js';
 import { createMemoryTools } from './tools.js';
 import {
@@ -24,40 +23,6 @@ import {
   printMigrationRequired,
   printMigrationSuccess,
 } from './migration.js';
-
-// System prompt addition to guide agent on memory usage
-const MEMORY_SYSTEM_PROMPT = `
-## Memory Management
-
-You have access to persistent memory tools. Use them thoughtfully:
-
-**STORE** new memories when:
-- User shares personal information (names, dates, preferences)
-- User gives standing instructions ("always...", "never...", "I prefer...")
-- User mentions relationships ("my wife", "my boss")
-- Something would be useful in future conversations
-
-**SEARCH** memories when:
-- Starting a new conversation (get context)
-- User references the past ("remember when...")
-- Personalizing responses
-- Before storing (avoid duplicates)
-
-**UPDATE** when information changes or becomes more accurate.
-
-**FORGET** when user requests or info becomes obsolete.
-
-### Guidelines
-
-1. **Be selective** — Don't store everything. Store what matters.
-2. **Be atomic** — One fact per memory. "User likes coffee and tea" → two memories.
-3. **Be confident** — Use confidence scores honestly:
-   - 1.0 = User explicitly stated
-   - 0.7-0.9 = User strongly implied
-   - 0.5-0.7 = Inferred from context
-4. **Use decay** — Events should decay (decayDays). Facts usually shouldn't.
-5. **Check first** — Search before storing to avoid duplicates.
-`;
 
 // Plugin definition
 const memoryToolsPlugin = {
@@ -78,7 +43,7 @@ const memoryToolsPlugin = {
     const hasLegacy = hasLegacyDatabase(legacyDbPath);
     const hasNew = hasNewMemories(memoriesPath);
 
-    if (cfg.autoMigrateLegacy !== false && hasLegacy && !hasNew) {
+    if (cfg.autoMigrateLegacy === true && hasLegacy && !hasNew) {
       // Need to migrate
       printMigrationRequired(legacyDbPath);
       api.logger.info('memory-tools: Starting migration from v1...');
@@ -92,9 +57,9 @@ const memoryToolsPlugin = {
         api.logger.error(`memory-tools: Migration failed: ${result.errors.join(', ')}`);
         throw new Error(`Migration failed: ${result.errors.join(', ')}`);
       }
-    } else if (cfg.autoMigrateLegacy === false && hasLegacy && !hasNew) {
+    } else if (cfg.autoMigrateLegacy !== true && hasLegacy && !hasNew) {
       api.logger.warn(
-        'memory-tools: legacy database detected but autoMigrateLegacy is disabled; skipping migration'
+        'memory-tools: legacy database detected but autoMigrateLegacy is disabled by default; skipping migration'
       );
     }
 
@@ -199,12 +164,12 @@ const memoryToolsPlugin = {
     // ═══════════════════════════════════════════════════════════════════════
 
     // Auto-inject standing instructions at conversation start
-    if (cfg.autoInjectInstructions !== false) {
+    if (cfg.autoInjectInstructions === true) {
       api.on('before_agent_start', async (event: { prompt?: string }) => {
         const instructions = store.getByCategory('instruction', 10);
 
         if (instructions.length === 0) {
-          return { systemPrompt: MEMORY_SYSTEM_PROMPT };
+          return undefined;
         }
 
         const instructionList = instructions
@@ -214,7 +179,6 @@ const memoryToolsPlugin = {
         api.logger.info?.(`memory-tools: injecting ${instructions.length} standing instructions`);
 
         return {
-          systemPrompt: MEMORY_SYSTEM_PROMPT,
           prependContext: `<standing-instructions>\nRemember these user instructions:\n${instructionList}\n</standing-instructions>`,
         };
       });

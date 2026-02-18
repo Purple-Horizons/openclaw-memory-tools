@@ -93,8 +93,8 @@ Add to `~/.openclaw/openclaw.json`:
         "enabled": true,
         "config": {
           "memoriesPath": "~/.openclaw/memories",
-          "autoInjectInstructions": true,
-          "autoMigrateLegacy": true
+          "autoInjectInstructions": false,
+          "autoMigrateLegacy": false
         }
       }
     }
@@ -109,10 +109,9 @@ Add to `~/.openclaw/openclaw.json`:
 
 - No API keys or external credentials are required by this plugin.
 - Data is stored locally in `~/.openclaw/memories` (or your configured `memoriesPath`).
-- The plugin can inject `systemPrompt` and `prependContext` at `before_agent_start` when `autoInjectInstructions=true`.
-- The plugin can auto-migrate legacy v1 data from `~/.openclaw/memory/tools/memory.db` when `autoMigrateLegacy=true`.
-- Set `autoInjectInstructions=false` if you do not want startup prompt/context injection.
-- Set `autoMigrateLegacy=false` if you do not want automatic migration reads/writes.
+- The plugin can prepend standing-instruction context at `before_agent_start` only when `autoInjectInstructions=true`.
+- The plugin can auto-migrate legacy v1 data from `~/.openclaw/memory/tools/memory.db` only when `autoMigrateLegacy=true`.
+- Defaults are conservative: both `autoInjectInstructions` and `autoMigrateLegacy` are `false`.
 
 ### Verify Installation
 
@@ -325,7 +324,7 @@ v2 automatically detects v1 databases and migrates them:
 3. Original database preserved as backup
 4. No manual action required
 
-To disable auto-migration, set `"autoMigrateLegacy": false` in plugin config.
+To enable auto-migration, set `"autoMigrateLegacy": true` in plugin config.
 
 ## Development
 

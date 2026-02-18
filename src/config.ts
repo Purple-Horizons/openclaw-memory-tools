@@ -60,8 +60,8 @@ export function parseConfig(raw: unknown): MemoryToolsConfig {
   return {
     memoriesPath,
     legacyDbPath,
-    autoInjectInstructions: config.autoInjectInstructions !== false,
-    autoMigrateLegacy: config.autoMigrateLegacy !== false,
+    autoInjectInstructions: config.autoInjectInstructions === true,
+    autoMigrateLegacy: config.autoMigrateLegacy === true,
     qmdCollection: (config.qmdCollection as string) || 'memories',
   };
 }
