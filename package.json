@@ -1,17 +1,20 @@
 {
   "name": "memory-tools",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Memory-as-Tools plugin for OpenClaw - Agent-controlled persistent memory with QMD-powered search",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
+    "clean": "rm -rf dist",
+    "build": "npm run clean && tsc",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "lint": "oxlint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "verify:release": "node scripts/verify-release.mjs",
+    "prepublishOnly": "npm run build && npm run verify:release"
   },
   "dependencies": {
     "@sinclair/typebox": "0.34.48",

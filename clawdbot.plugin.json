@@ -3,7 +3,7 @@
   "kind": "memory",
   "name": "Memory Tools",
   "description": "Agent-controlled memory with file-based storage and optional QMD search. No external APIs required.",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "uiHints": {
     "memoriesPath": {
       "label": "Memories Path",
@@ -14,6 +14,16 @@
     "autoInjectInstructions": {
       "label": "Auto-Inject Instructions",
       "help": "Inject standing instructions (category='instruction') at conversation start"
+    },
+    "autoMigrateLegacy": {
+      "label": "Auto-Migrate Legacy DB",
+      "advanced": true,
+      "help": "Automatically migrate v1 database to markdown files on startup"
+    },
+    "qmdCollection": {
+      "label": "QMD Collection",
+      "advanced": true,
+      "help": "QMD collection name for semantic search index"
     }
   },
   "configSchema": {
@@ -27,6 +37,14 @@
       "autoInjectInstructions": {
         "type": "boolean",
         "default": true
+      },
+      "autoMigrateLegacy": {
+        "type": "boolean",
+        "default": true
+      },
+      "qmdCollection": {
+        "type": "string",
+        "default": "memories"
       }
     }
   }

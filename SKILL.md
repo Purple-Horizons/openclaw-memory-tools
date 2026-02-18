@@ -69,6 +69,15 @@ npm install -g @tobilu/qmd
 
 Without QMD, basic filtering works. With QMD, you get semantic search (BM25 + vector + reranking).
 
+## Security Model
+
+- No API keys or external credentials are required.
+- Data is stored locally in `~/.openclaw/memories` (or configured `memoriesPath`).
+- The plugin can inject `systemPrompt` and `prependContext` at `before_agent_start` when `autoInjectInstructions=true`.
+- The plugin can auto-migrate legacy v1 data from `~/.openclaw/memory/tools/memory.db` when `autoMigrateLegacy=true`.
+- Disable injection with `autoInjectInstructions=false` if you want stricter control.
+- Disable migration with `autoMigrateLegacy=false` if you do not want startup migration behavior.
+
 ## Storage Format
 
 Memories are stored as markdown files in `~/.openclaw/memories/`:
@@ -215,6 +224,8 @@ v2 automatically detects v1 databases and migrates them:
 2. If found, exports all memories to markdown files
 3. Original database preserved as backup
 4. No manual action required
+
+To disable auto-migration, set `autoMigrateLegacy: false` in plugin config.
 
 ## License
 

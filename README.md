@@ -85,7 +85,8 @@ Add to `~/.openclaw/openclaw.json`:
         "enabled": true,
         "config": {
           "memoriesPath": "~/.openclaw/memories",
-          "autoInjectInstructions": true
+          "autoInjectInstructions": true,
+          "autoMigrateLegacy": true
         }
       }
     }
@@ -95,6 +96,15 @@ Add to `~/.openclaw/openclaw.json`:
   }
 }
 ```
+
+### Security Model
+
+- No API keys or external credentials are required by this plugin.
+- Data is stored locally in `~/.openclaw/memories` (or your configured `memoriesPath`).
+- The plugin can inject `systemPrompt` and `prependContext` at `before_agent_start` when `autoInjectInstructions=true`.
+- The plugin can auto-migrate legacy v1 data from `~/.openclaw/memory/tools/memory.db` when `autoMigrateLegacy=true`.
+- Set `autoInjectInstructions=false` if you do not want startup prompt/context injection.
+- Set `autoMigrateLegacy=false` if you do not want automatic migration reads/writes.
 
 ### Verify Installation
 
@@ -307,6 +317,8 @@ v2 automatically detects v1 databases and migrates them:
 3. Original database preserved as backup
 4. No manual action required
 
+To disable auto-migration, set `"autoMigrateLegacy": false` in plugin config.
+
 ## Development
 
 ```bash
@@ -329,6 +341,8 @@ npm run build
 ### Environment Variables
 
 - `MEMORY_TOOLS_DISABLE_QMD=true` - Disable QMD for testing
+
+No environment variables are required for credentials.
 
 ## Comparison with Other Memory Systems
 

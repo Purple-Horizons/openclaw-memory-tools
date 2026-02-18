@@ -78,7 +78,7 @@ const memoryToolsPlugin = {
     const hasLegacy = hasLegacyDatabase(legacyDbPath);
     const hasNew = hasNewMemories(memoriesPath);
 
-    if (hasLegacy && !hasNew) {
+    if (cfg.autoMigrateLegacy !== false && hasLegacy && !hasNew) {
       // Need to migrate
       printMigrationRequired(legacyDbPath);
       api.logger.info('memory-tools: Starting migration from v1...');
@@ -92,13 +92,17 @@ const memoryToolsPlugin = {
         api.logger.error(`memory-tools: Migration failed: ${result.errors.join(', ')}`);
         throw new Error(`Migration failed: ${result.errors.join(', ')}`);
       }
+    } else if (cfg.autoMigrateLegacy === false && hasLegacy && !hasNew) {
+      api.logger.warn(
+        'memory-tools: legacy database detected but autoMigrateLegacy is disabled; skipping migration'
+      );
     }
 
     // ═══════════════════════════════════════════════════════════════════════
     // Initialize Store
     // ═══════════════════════════════════════════════════════════════════════
 
-    const store = new MemoryStoreV2(memoriesPath);
+    const store = new MemoryStoreV2(memoriesPath, cfg.qmdCollection);
 
     // Check QMD availability
     const qmdAvailable = await store.isQMDAvailable();

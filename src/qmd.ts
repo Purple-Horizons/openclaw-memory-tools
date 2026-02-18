@@ -5,10 +5,7 @@
  * QMD provides BM25 + vector search + LLM reranking, all local.
  */
 
-import { exec } from 'node:child_process';
-import { promisify } from 'node:util';
-
-const execAsync = promisify(exec);
+import { spawn } from 'node:child_process';
 
 export interface QMDSearchResult {
   docid: string;
@@ -42,7 +39,7 @@ export class QMDClient {
 
   constructor(memoriesPath: string, collectionName: string = 'memories', options?: { disabled?: boolean }) {
     this.memoriesPath = memoriesPath;
-    this.collectionName = collectionName;
+    this.collectionName = this.validateCollectionName(collectionName);
     // Allow disabling QMD for tests via env var or option
     this.disabled = options?.disabled || process.env.MEMORY_TOOLS_DISABLE_QMD === 'true';
   }
@@ -62,7 +59,7 @@ export class QMDClient {
    */
   async isInstalled(): Promise<boolean> {
     try {
-      await execAsync('qmd --version');
+      await this.runQmd(['--version'], { timeout: 5000 });
       return true;
     } catch {
       return false;
@@ -84,7 +81,7 @@ export class QMDClient {
 
     // Check if collection exists by parsing text output
     try {
-      const { stdout } = await execAsync('qmd collection list');
+      const { stdout } = await this.runQmd(['collection', 'list'], { timeout: 10000 });
 
       // Parse text output - look for collection name in the output
       const exists = stdout.includes(`${this.collectionName} (qmd://`) ||
@@ -92,7 +89,9 @@ export class QMDClient {
 
       if (!exists) {
         // Create collection
-        await execAsync(`qmd collection add "${this.memoriesPath}" --name ${this.collectionName}`);
+        await this.runQmd(['collection', 'add', this.memoriesPath, '--name', this.collectionName], {
+          timeout: 30000,
+        });
         console.log(`[memory-tools] Created QMD collection: ${this.collectionName}`);
 
         // Initial embedding
@@ -103,7 +102,9 @@ export class QMDClient {
     } catch (err: any) {
       // Collection list might fail if no collections exist yet
       if (err.message?.includes('No collections') || err.message?.includes('Collections (0)')) {
-        await execAsync(`qmd collection add "${this.memoriesPath}" --name ${this.collectionName}`);
+        await this.runQmd(['collection', 'add', this.memoriesPath, '--name', this.collectionName], {
+          timeout: 30000,
+        });
         await this.forceUpdate();
         this.initialized = true;
       } else {
@@ -123,8 +124,8 @@ export class QMDClient {
     await this.ensureCollection();
 
     try {
-      const { stdout } = await execAsync(
-        `qmd query "${this.escapeQuery(query)}" -n ${limit} --json -c ${this.collectionName}`,
+      const { stdout } = await this.runQmd(
+        ['query', query, '-n', String(limit), '--json', '-c', this.collectionName],
         { timeout: 30000 } // 30s timeout for reranking
       );
 
@@ -147,8 +148,8 @@ export class QMDClient {
     await this.ensureCollection();
 
     try {
-      const { stdout } = await execAsync(
-        `qmd vsearch "${this.escapeQuery(query)}" -n ${limit} --json -c ${this.collectionName}`,
+      const { stdout } = await this.runQmd(
+        ['vsearch', query, '-n', String(limit), '--json', '-c', this.collectionName],
         { timeout: 10000 }
       );
 
@@ -170,8 +171,8 @@ export class QMDClient {
     await this.ensureCollection();
 
     try {
-      const { stdout } = await execAsync(
-        `qmd search "${this.escapeQuery(query)}" -n ${limit} --json -c ${this.collectionName}`,
+      const { stdout } = await this.runQmd(
+        ['search', query, '-n', String(limit), '--json', '-c', this.collectionName],
         { timeout: 5000 }
       );
 
@@ -224,7 +225,7 @@ export class QMDClient {
    */
   async update(): Promise<void> {
     try {
-      await execAsync('qmd update', { timeout: 60000 });
+      await this.runQmd(['update'], { timeout: 60000 });
     } catch (err: any) {
       console.error('[memory-tools] QMD update failed:', err.message);
     }
@@ -236,7 +237,7 @@ export class QMDClient {
   async forceUpdate(): Promise<void> {
     try {
       console.log('[memory-tools] Running QMD embed (this may take a moment on first run)...');
-      await execAsync('qmd embed', { timeout: 300000 }); // 5 min timeout for initial embed
+      await this.runQmd(['embed'], { timeout: 300000 }); // 5 min timeout for initial embed
       console.log('[memory-tools] QMD embedding complete');
     } catch (err: any) {
       console.error('[memory-tools] QMD embed failed:', err.message);
@@ -248,7 +249,7 @@ export class QMDClient {
    */
   async status(): Promise<QMDStatus | null> {
     try {
-      const { stdout } = await execAsync('qmd status --json');
+      const { stdout } = await this.runQmd(['status', '--json'], { timeout: 10000 });
       return JSON.parse(stdout);
     } catch {
       return null;
@@ -281,9 +282,64 @@ export class QMDClient {
     return null;
   }
 
-  private escapeQuery(query: string): string {
-    // Escape special characters for shell
-    return query.replace(/"/g, '\\"').replace(/\$/g, '\\$').replace(/`/g, '\\`');
+  private validateCollectionName(name: string): string {
+    if (!/^[A-Za-z0-9_-]{1,64}$/.test(name)) {
+      throw new Error(
+        `Invalid qmd collection name "${name}". Use letters, numbers, "_" or "-" (max 64 chars).`
+      );
+    }
+    return name;
+  }
+
+  private async runQmd(
+    args: string[],
+    options: { timeout?: number } = {}
+  ): Promise<{ stdout: string; stderr: string }> {
+    const timeoutMs = options.timeout ?? 10000;
+
+    return new Promise((resolve, reject) => {
+      const child = spawn('qmd', args, { stdio: ['ignore', 'pipe', 'pipe'] });
+      let stdout = '';
+      let stderr = '';
+      let timedOut = false;
+
+      const timer = setTimeout(() => {
+        timedOut = true;
+        child.kill('SIGTERM');
+      }, timeoutMs);
+
+      child.stdout.on('data', chunk => {
+        stdout += chunk.toString();
+      });
+
+      child.stderr.on('data', chunk => {
+        stderr += chunk.toString();
+      });
+
+      child.on('error', err => {
+        clearTimeout(timer);
+        reject(err);
+      });
+
+      child.on('close', code => {
+        clearTimeout(timer);
+        if (timedOut) {
+          reject(new Error(`qmd ${args.join(' ')} timed out after ${timeoutMs}ms`));
+          return;
+        }
+
+        if (code !== 0) {
+          reject(
+            new Error(
+              `qmd ${args.join(' ')} failed with code ${code}: ${(stderr || stdout).trim()}`
+            )
+          );
+          return;
+        }
+
+        resolve({ stdout, stderr });
+      });
+    });
   }
 
   private parseResults(stdout: string): QMDSearchResult[] {

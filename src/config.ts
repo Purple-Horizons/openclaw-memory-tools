@@ -17,6 +17,9 @@ export const memoryToolsConfigSchema = Type.Object({
   // Auto-inject standing instructions at conversation start
   autoInjectInstructions: Type.Optional(Type.Boolean()),
 
+  // Auto-migrate legacy v1 database on startup
+  autoMigrateLegacy: Type.Optional(Type.Boolean()),
+
   // QMD collection name
   qmdCollection: Type.Optional(Type.String()),
 });
@@ -58,6 +61,7 @@ export function parseConfig(raw: unknown): MemoryToolsConfig {
     memoriesPath,
     legacyDbPath,
     autoInjectInstructions: config.autoInjectInstructions !== false,
+    autoMigrateLegacy: config.autoMigrateLegacy !== false,
     qmdCollection: (config.qmdCollection as string) || 'memories',
   };
 }

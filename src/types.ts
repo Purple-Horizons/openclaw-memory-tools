@@ -86,23 +86,3 @@ export interface ListOptions {
   limit?: number;
   offset?: number;
 }
-
-export interface PluginConfig {
-  embedding: {
-    apiKey: string;
-    model?: string;
-  };
-  dbPath?: string;
-  autoInjectInstructions?: boolean;
-  decayCheckInterval?: number;
-}
-
-// Vector dimensions for different embedding models
-export const VECTOR_DIMS: Record<string, number> = {
-  'text-embedding-3-small': 1536,
-  'text-embedding-3-large': 3072,
-};
-
-export function vectorDimsForModel(model: string): number {
-  return VECTOR_DIMS[model] ?? 1536;
-}

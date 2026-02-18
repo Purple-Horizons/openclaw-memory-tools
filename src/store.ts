@@ -22,10 +22,10 @@ export class MemoryStoreV2 {
   private qmd: QMDClient;
   private memoriesPath: string;
 
-  constructor(memoriesPath: string) {
+  constructor(memoriesPath: string, qmdCollection: string = 'memories') {
     this.memoriesPath = memoriesPath;
     this.fileManager = new MemoryFileManager(memoriesPath);
-    this.qmd = new QMDClient(memoriesPath, 'memories');
+    this.qmd = new QMDClient(memoriesPath, qmdCollection);
   }
 
   /**
@@ -107,6 +107,10 @@ export class MemoryStoreV2 {
     if (opts.query) {
       const qmdResults = await this.qmd.query(opts.query, limit * 2); // Over-fetch for filtering
 
+      if (qmdResults.length === 0) {
+        return this.fallbackQuerySearch(opts.query, opts, limit);
+      }
+
       for (const qr of qmdResults) {
         const memoryId = this.qmd.extractMemoryId(qr);
         if (!memoryId) continue;
@@ -160,6 +164,57 @@ export class MemoryStoreV2 {
     }
 
     return results.slice(0, limit);
+  }
+
+  private fallbackQuerySearch(
+    query: string,
+    opts: SearchOptions,
+    limit: number
+  ): MemorySearchResult[] {
+    const all = this.fileManager.list({ category: opts.category, limit: 10000 }).items;
+    const queryText = query.toLowerCase().trim();
+    const queryTokens = queryText.split(/\s+/).filter(t => t.length > 1);
+
+    const scored = all
+      .filter(memory => {
+        if (memory.deletedAt) return false;
+        if (opts.minConfidence !== undefined && memory.confidence < opts.minConfidence) return false;
+        if (opts.minImportance !== undefined && memory.importance < opts.minImportance) return false;
+
+        if (opts.tags?.length) {
+          const hasAllTags = opts.tags.every(tag => memory.tags.includes(tag));
+          if (!hasAllTags) return false;
+        }
+
+        if (opts.excludeDecayed !== false && memory.decayDays) {
+          const expiresAt = memory.createdAt + (memory.decayDays * 86400000);
+          if (Date.now() > expiresAt) return false;
+        }
+
+        return true;
+      })
+      .map(memory => {
+        const haystack = `${memory.content} ${memory.tags.join(' ')}`.toLowerCase();
+        let score = 0;
+
+        if (haystack.includes(queryText)) {
+          score += 0.8;
+        }
+
+        if (queryTokens.length > 0) {
+          let tokenHits = 0;
+          for (const token of queryTokens) {
+            if (haystack.includes(token)) tokenHits++;
+          }
+          score += (tokenHits / queryTokens.length) * 0.2;
+        }
+
+        return { memory, score };
+      })
+      .filter(r => r.score > 0)
+      .sort((a, b) => b.score - a.score);
+
+    return scored.slice(0, limit);
   }
 
   /**
