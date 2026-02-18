@@ -69,6 +69,13 @@ npm install -g @tobilu/qmd
 
 Without QMD, basic filtering works. With QMD, you get semantic search (BM25 + vector + reranking).
 
+### Node Compatibility (QMD)
+
+- QMD may not be compatible with the newest Node ABI immediately.
+- If QMD fails (for example `NODE_MODULE_VERSION` mismatch), memory-tools falls back to basic mode.
+- To force basic mode: `MEMORY_TOOLS_DISABLE_QMD=true`.
+- For best QMD stability, use a Node LTS version supported by your installed QMD build.
+
 ## Security Model
 
 - No API keys or external credentials are required.

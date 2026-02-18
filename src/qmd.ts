@@ -36,6 +36,7 @@ export class QMDClient {
   private updateDebounceTimer: NodeJS.Timeout | null = null;
   private pendingUpdate: boolean = false;
   private disabled: boolean = false;
+  private disableReason: string | null = null;
 
   constructor(memoriesPath: string, collectionName: string = 'memories', options?: { disabled?: boolean }) {
     this.memoriesPath = memoriesPath;
@@ -70,6 +71,7 @@ export class QMDClient {
    * Initialize QMD collection if needed
    */
   async ensureCollection(): Promise<void> {
+    if (this.disabled) return;
     if (this.initialized) return;
 
     const installed = await this.isInstalled();
@@ -108,6 +110,7 @@ export class QMDClient {
         await this.forceUpdate();
         this.initialized = true;
       } else {
+        this.maybeDisableForFatalQmdError(err);
         throw err;
       }
     }
@@ -121,9 +124,8 @@ export class QMDClient {
     const available = await this.checkQMDAvailable();
     if (!available) return [];
 
-    await this.ensureCollection();
-
     try {
+      await this.ensureCollection();
       const { stdout } = await this.runQmd(
         ['query', query, '-n', String(limit), '--json', '-c', this.collectionName],
         { timeout: 30000 } // 30s timeout for reranking
@@ -145,9 +147,8 @@ export class QMDClient {
     const available = await this.checkQMDAvailable();
     if (!available) return [];
 
-    await this.ensureCollection();
-
     try {
+      await this.ensureCollection();
       const { stdout } = await this.runQmd(
         ['vsearch', query, '-n', String(limit), '--json', '-c', this.collectionName],
         { timeout: 10000 }
@@ -168,9 +169,8 @@ export class QMDClient {
     const available = await this.checkQMDAvailable();
     if (!available) return [];
 
-    await this.ensureCollection();
-
     try {
+      await this.ensureCollection();
       const { stdout } = await this.runQmd(
         ['search', query, '-n', String(limit), '--json', '-c', this.collectionName],
         { timeout: 5000 }
@@ -291,6 +291,23 @@ export class QMDClient {
     return name;
   }
 
+  private maybeDisableForFatalQmdError(err: unknown): void {
+    const message = err instanceof Error ? err.message : String(err);
+    const fatalPatterns = [
+      /NODE_MODULE_VERSION/i,
+      /better-sqlite3/i,
+      /was compiled against a different Node\.js version/i,
+    ];
+
+    if (!fatalPatterns.some(p => p.test(message))) return;
+    if (this.disabled) return;
+
+    this.disabled = true;
+    this.qmdAvailable = false;
+    this.disableReason = message;
+    console.warn('[memory-tools] QMD disabled due to runtime incompatibility:', message);
+  }
+
   private async runQmd(
     args: string[],
     options: { timeout?: number } = {}
@@ -318,6 +335,7 @@ export class QMDClient {
 
       child.on('error', err => {
         clearTimeout(timer);
+        this.maybeDisableForFatalQmdError(err);
         reject(err);
       });
 
@@ -329,11 +347,11 @@ export class QMDClient {
         }
 
         if (code !== 0) {
-          reject(
-            new Error(
-              `qmd ${args.join(' ')} failed with code ${code}: ${(stderr || stdout).trim()}`
-            )
+          const err = new Error(
+            `qmd ${args.join(' ')} failed with code ${code}: ${(stderr || stdout).trim()}`
           );
+          this.maybeDisableForFatalQmdError(err);
+          reject(err);
           return;
         }
 

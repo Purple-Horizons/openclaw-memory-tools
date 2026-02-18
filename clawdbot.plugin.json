@@ -3,7 +3,7 @@
   "kind": "memory",
   "name": "Memory Tools",
   "description": "Agent-controlled memory with file-based storage and optional QMD search. No external APIs required.",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "uiHints": {
     "memoriesPath": {
       "label": "Memories Path",

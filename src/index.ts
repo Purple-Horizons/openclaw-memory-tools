@@ -112,8 +112,14 @@ const memoryToolsPlugin = {
       );
       api.logger.warn('memory-tools: Semantic search will be limited until QMD is installed.');
     } else {
-      await store.init();
-      api.logger.info(`memory-tools: initialized with QMD (path: ${memoriesPath})`);
+      try {
+        await store.init();
+        api.logger.info(`memory-tools: initialized with QMD (path: ${memoriesPath})`);
+      } catch (err: any) {
+        api.logger.warn(
+          `memory-tools: QMD initialization failed, continuing in basic mode: ${err?.message || err}`
+        );
+      }
     }
 
     const tools = createMemoryTools(store as any); // Cast for compatibility

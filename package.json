@@ -1,6 +1,6 @@
 {
   "name": "memory-tools",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "Memory-as-Tools plugin for OpenClaw - Agent-controlled persistent memory with QMD-powered search",
   "type": "module",
   "main": "dist/index.js",

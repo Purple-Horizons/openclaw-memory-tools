@@ -70,6 +70,14 @@ npm install -g @tobilu/qmd
 
 Without QMD, basic category/tag filtering works. With QMD, you get semantic search (BM25 + vector + reranking using local GGUF models).
 
+### Node Compatibility (QMD)
+
+- `memory-tools` works without QMD on modern Node versions.
+- QMD dependencies (notably `better-sqlite3`) may lag behind the latest Node ABI.
+- If QMD fails on startup (for example `NODE_MODULE_VERSION` mismatch on Node v25), the plugin now falls back to basic mode.
+- To force basic mode explicitly, set `MEMORY_TOOLS_DISABLE_QMD=true`.
+- Recommended for full QMD stability: use a Node LTS version supported by your installed QMD build.
+
 ## Configuration
 
 Add to `~/.openclaw/openclaw.json`:
