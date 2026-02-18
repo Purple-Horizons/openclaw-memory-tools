@@ -2,64 +2,32 @@
   "id": "memory-tools",
   "kind": "memory",
   "name": "Memory Tools",
-  "description": "Agent-controlled memory with confidence scoring, decay, and semantic search. The agent decides WHEN to store/retrieve memories.",
-  "version": "1.0.0",
+  "description": "Agent-controlled memory with file-based storage and optional QMD search. No external APIs required.",
+  "version": "2.0.1",
   "uiHints": {
-    "embedding.apiKey": {
-      "label": "OpenAI API Key",
-      "sensitive": true,
-      "placeholder": "sk-proj-...",
-      "help": "API key for OpenAI embeddings (or use ${OPENAI_API_KEY})"
-    },
-    "embedding.model": {
-      "label": "Embedding Model",
-      "placeholder": "text-embedding-3-small",
-      "help": "OpenAI embedding model to use"
-    },
-    "dbPath": {
-      "label": "Database Path",
-      "placeholder": "~/.openclaw/memory/tools",
-      "advanced": true
+    "memoriesPath": {
+      "label": "Memories Path",
+      "placeholder": "~/.openclaw/memories",
+      "advanced": true,
+      "help": "Directory for storing memory files"
     },
     "autoInjectInstructions": {
       "label": "Auto-Inject Instructions",
       "help": "Inject standing instructions (category='instruction') at conversation start"
-    },
-    "decayCheckInterval": {
-      "label": "Decay Check Interval (hours)",
-      "help": "How often to check for decayed memories (0 = disabled)"
     }
   },
   "configSchema": {
     "type": "object",
     "additionalProperties": false,
     "properties": {
-      "embedding": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "apiKey": {
-            "type": "string",
-            "description": "OpenAI API key. Supports ${OPENAI_API_KEY} syntax or falls back to OPENAI_API_KEY env var."
-          },
-          "model": {
-            "type": "string",
-            "enum": ["text-embedding-3-small", "text-embedding-3-large"]
-          }
-        }
-      },
-      "dbPath": {
-        "type": "string"
+      "memoriesPath": {
+        "type": "string",
+        "description": "Directory for storing memory markdown files"
       },
       "autoInjectInstructions": {
         "type": "boolean",
         "default": true
-      },
-      "decayCheckInterval": {
-        "type": "number",
-        "default": 24
       }
-    },
-    "required": []
+    }
   }
 }
